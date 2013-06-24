@@ -6,9 +6,17 @@ from trends.items import TrendsItem
 class TrendsSpider(BaseSpider):
     name = 'trends'
     allowed_domains = ["apartments.com"]
-    start_urls = ["http://www.apartments.com/California/Mountain-View/Archstone-Mountain-View/1107480"]
-        
+    start_urls = ["http://www.apartments.com"]
+     
     def parse(self, response):
+        hxs = HtmlXpathSelector(response)
+        state_urls = hxs.select('//a[@class="geo-link"]/@href').extract()
+        for url in state_urls:
+            yield Request(start_urls[0]+url, callback=self.parse_list)
+
+    def parse_list(self, response): 
+   
+    def parse_page(self, response):
         hxs = HtmlXPathSelector(response)
         name = str(hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/h1[@itemprop="name"]/text()').extract()[0])
         contact = str(hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/div[@itemprop="telephone"]/text()').extract()[0])
@@ -21,18 +29,18 @@ class TrendsSpider(BaseSpider):
         for i in body:
             if hxs.select(i) != []:
                 price = str(hxs.select(i+'/span[@class="rent"]/text()').extract()[0]).split('-')
-                lp = re.search('/d+', price[0])
+                lp = int(re.search('\d+', price[0]).group(0))
                 if len(price) == 2:
-                    hp = re.search('/d+', price[1])
+                    hp = int(re.search('\d+', price[1]).group(0))
                 else:
                     hp = lp
-                deposit = re.search('/d+' ,str(hxs.select(i+'/span[@class="deposit"]/text()').extract()[0]))
-                beds = 1
-                baths = re.search('/d+', str(hxs.select(i+'/span[@class="baths"]/text()').extract()[0]))
+                deposit = int(re.search('\d+', str(hxs.select(i+'/span[@class="deposit"]/text()').extract()[0])).group(0))
+                beds = int(re.search('\d+', str(hxs.select(i+'/span[@class="beds"]/text()').extract()[0])).group(0))
+                baths = int(re.search('\d+', str(hxs.select(i+'/span[@class="baths"]/text()').extract()[0])).group(0))
                 square_feet = str(hxs.select(i+'/span[@class="square-feet"]/text()').extract()[0]).split('-')
-                ls = re.search('/d+', square_feet[0])
+                ls = int(re.search('\d+', square_feet[0]).group(0))
                 if len(square_feet) == 2:
-                    hs = re.search('/d+', square_feet[1])
+                    hs = int(re.search('\d+', square_feet[1]).group(0))
                 else:
                     hs = ls
                 item = TrendsItem()
