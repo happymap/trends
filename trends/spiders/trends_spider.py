@@ -2,21 +2,33 @@ from scrapy.spider import BaseSpider
 from scrapy.selector import HtmlXPathSelector
 import re
 from trends.items import TrendsItem
+from scrapy.http import Request
 
 class TrendsSpider(BaseSpider):
     name = 'trends'
     allowed_domains = ["apartments.com"]
-    start_urls = ["http://www.apartments.com"]
-     
+    start_urls = ["http://www.apartments.com/California"]
+    # start_urls = ["http://www.apartments.com/California/Anaheim/Tara-Hill-Apartments/409533"]
+ 
     def parse(self, response):
-        hxs = HtmlXpathSelector(response)
+        print 'starting parse'
+        hxs = HtmlXPathSelector(response)
+        root_url = "http://www.apartments.com"
         state_urls = hxs.select('//a[@class="geo-link"]/@href').extract()
         for url in state_urls:
-            yield Request(start_urls[0]+url, callback=self.parse_list)
+            yield Request(root_url + str(url), callback=self.parse_list)     
 
-    def parse_list(self, response): 
-   
-    def parse_page(self, response):
+    def parse_list(self, response):
+        print 'starting parse list'
+        hxs = HtmlXPathSelector(response);
+        root_url = "http://www.apartments.com"
+        title = str(hxs.select('//title/text()').extract())
+        apt_urls = hxs.select('//div[@class="listings"]/div[@class="listing"]/div[@class="content"]/div[@class="details"]/a/@href').extract()
+        for url in apt_urls:
+            yield Request(root_url + str(url), callback=self.parse_aptPage)
+        
+    def parse_aptPage(self, response):
+        print 'starting parse apt page'
         hxs = HtmlXPathSelector(response)
         name = str(hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/h1[@itemprop="name"]/text()').extract()[0])
         contact = str(hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/div[@itemprop="telephone"]/text()').extract()[0])
@@ -34,7 +46,11 @@ class TrendsSpider(BaseSpider):
                     hp = int(re.search('\d+', price[1]).group(0))
                 else:
                     hp = lp
-                deposit = int(re.search('\d+', str(hxs.select(i+'/span[@class="deposit"]/text()').extract()[0])).group(0))
+                deposit = -1
+                if(len(hxs.select(i+'/span[@class="deposit"]/text()').extract()) > 0):
+                    deposit_content = re.search('\d+', str(hxs.select(i+'/span[@class="deposit"]/text()').extract()[0]))
+                    if(deposit_content != None):
+                        deposit = int(deposit_content.group(0))
                 beds = int(re.search('\d+', str(hxs.select(i+'/span[@class="beds"]/text()').extract()[0])).group(0))
                 baths = int(re.search('\d+', str(hxs.select(i+'/span[@class="baths"]/text()').extract()[0])).group(0))
                 square_feet = str(hxs.select(i+'/span[@class="square-feet"]/text()').extract()[0]).split('-')
@@ -57,6 +73,8 @@ class TrendsSpider(BaseSpider):
                 item['deposit'] = deposit
                 item['beds'] = beds
                 item['baths'] = baths
-                items.append(item) 
-        return items
+                items.append(item)
+               # yield item
+        print items
+        # return items
         
