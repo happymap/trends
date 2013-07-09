@@ -1,8 +1,9 @@
 from scrapy.spider import BaseSpider
 from scrapy.selector import HtmlXPathSelector
-import re
+import re, time
 from trends.items import TrendsItem
 from scrapy.http import Request
+
 
 class TrendsSpider(BaseSpider):
     name = 'trends'
@@ -29,10 +30,16 @@ class TrendsSpider(BaseSpider):
         
     def parse_aptPage(self, response):
         print 'starting parse apt page'
+        url = response.url
+        url_arr = url.split('/')
+        id = url_arr[-1]
         hxs = HtmlXPathSelector(response)
         name = str(hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/h1[@itemprop="name"]/text()').extract()[0])
         contact = str(hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/div[@itemprop="telephone"]/text()').extract()[0])
-        street = str( hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/div[@id="address"]/a[@href="#media-map"]/span[@itemprop="streetAddress"]/text()').extract()[0])
+        street = ""
+        street_str =  hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/div[@id="address"]/a[@href="#media-map"]/span[@itemprop="streetAddress"]/text()').extract();
+        if(len(street_str) > 0): 
+            street = str(street_str[0])
         city = str(hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/div[@id="address"]/a[@href="#media-map"]/span[@itemprop="addressLocality"]/text()').extract()[0])
         state = str(hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/div[@id="address"]/a[@href="#media-map"]/span[@itemprop="addressRegion"]/text()').extract()[0])
         zipcode = str(hxs.select('//div[@id="basic-info"]/section[@id="property-info"]/div[@id="address"]/a[@href="#media-map"]/span[@itemprop="postalCode"]/text()').extract()[0])
@@ -40,12 +47,18 @@ class TrendsSpider(BaseSpider):
         items = []
         for i in body:
             if hxs.select(i) != []:
-                price = str(hxs.select(i+'/span[@class="rent"]/text()').extract()[0]).split('-')
-                lp = int(re.search('\d+', price[0]).group(0))
-                if len(price) == 2:
-                    hp = int(re.search('\d+', price[1]).group(0))
-                else:
-                    hp = lp
+                price_str = hxs.select(i+'/span[@class="rent"]/text()').extract()
+                lp = -1
+                hp = -1
+                if(len(price_str) != 0):
+                    price = str(price_str[0]).split('-')
+                    if(len(price) != 0):
+                        if(re.search('\d+', price[0]) != None):
+                            lp = int(re.search('\d+', price[0]).group(0))
+                            if len(price) == 2:
+                                hp = int(re.search('\d+', price[1]).group(0))
+                            else:
+                                hp = lp
                 deposit = -1
                 if(len(hxs.select(i+'/span[@class="deposit"]/text()').extract()) > 0):
                     deposit_content = re.search('\d+', str(hxs.select(i+'/span[@class="deposit"]/text()').extract()[0]))
@@ -53,12 +66,16 @@ class TrendsSpider(BaseSpider):
                         deposit = int(deposit_content.group(0))
                 beds = int(re.search('\d+', str(hxs.select(i+'/span[@class="beds"]/text()').extract()[0])).group(0))
                 baths = int(re.search('\d+', str(hxs.select(i+'/span[@class="baths"]/text()').extract()[0])).group(0))
-                square_feet = str(hxs.select(i+'/span[@class="square-feet"]/text()').extract()[0]).split('-')
-                ls = int(re.search('\d+', square_feet[0]).group(0))
-                if len(square_feet) == 2:
-                    hs = int(re.search('\d+', square_feet[1]).group(0))
-                else:
-                    hs = ls
+                square_feet_str = hxs.select(i+'/span[@class="square-feet"]/text()').extract()
+                hs = -1
+                ls = -1
+                if(len(square_feet_str) > 0):
+                    square_feet = str(square_feet_str[0]).split('-')
+                    ls = int(re.search('\d+', square_feet[0]).group(0))
+                    if len(square_feet) == 2:
+                        hs = int(re.search('\d+', square_feet[1]).group(0))
+                    else:
+                        hs = ls
                 item = TrendsItem()
                 item['name'] = name
                 item['contact'] = contact
@@ -73,8 +90,10 @@ class TrendsSpider(BaseSpider):
                 item['deposit'] = deposit
                 item['beds'] = beds
                 item['baths'] = baths
+                item['id'] = id
                 items.append(item)
                # yield item
+        fileName = id + '-' + int(time.time()*1000)
         print items
         # return items
         
