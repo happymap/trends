@@ -1,6 +1,6 @@
 from scrapy.spider import BaseSpider
 from scrapy.selector import HtmlXPathSelector
-import re, time
+import re, time, json
 from trends.items import TrendsItem
 from scrapy.http import Request
 
@@ -91,9 +91,12 @@ class TrendsSpider(BaseSpider):
                 item['beds'] = beds
                 item['baths'] = baths
                 item['id'] = id
+                item = item.__dict__
                 items.append(item)
                # yield item
-        fileName = id + '-' + int(time.time()*1000)
-        print items
+        fileName = id + '-' + str(int(time.time()*1000))
+        f = open('/home/yifanying/data/' + fileName, 'w')
+        print json.dumps(items)
+        # prinon fileName
         # return items
         
