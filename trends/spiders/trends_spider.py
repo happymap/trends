@@ -96,7 +96,8 @@ class TrendsSpider(BaseSpider):
                # yield item
         fileName = id + '-' + str(int(time.time()*1000))
         f = open('/home/yifanying/data/' + fileName, 'w')
-        print json.dumps(items)
+        f.write(json.dumps(items))
+        f.close()
         # prinon fileName
         # return items
         
