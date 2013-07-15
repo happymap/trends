@@ -1,3 +1,3 @@
 #! /bin/bash
 cd trends
-scrapy crawl trends
+watch -n 325600 scrapy crawl trends

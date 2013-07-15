@@ -95,7 +95,7 @@ class TrendsSpider(BaseSpider):
                 items.append(item)
                # yield item
         fileName = id + '-' + str(int(time.time()*1000))
-        f = open('data/' + fileName, 'w')
+        f = open('/home/ubuntu/crawl/data/' + fileName, 'w')
         f.write(json.dumps(items))
         f.close()
         # prinon fileName
