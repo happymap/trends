@@ -1,9 +1,15 @@
 from scrapy.spider import BaseSpider
 from scrapy.selector import HtmlXPathSelector
-import re, time, json
 from trends.items import TrendsItem
 from scrapy.http import Request
+from datetime import date
 
+import re, time, json, pymongo
+
+
+connection_string = 'mongodb://localhost'
+data_directory = '/Users/yying/test/data/'
+seconds_of_day = 60*60*24
 
 class TrendsSpider(BaseSpider):
     name = 'trends'
@@ -91,13 +97,21 @@ class TrendsSpider(BaseSpider):
                 item['beds'] = beds
                 item['baths'] = baths
                 item['id'] = id
+
                 item = item.__dict__
-                items.append(item)
-               # yield item
-        fileName = id + '-' + str(int(time.time()*1000))
-        f = open('/home/ubuntu/crawl/data/' + fileName, 'w')
-        f.write(json.dumps(items))
-        f.close()
-        # prinon fileName
-        # return items
-        
+
+                #insert into mongodb
+                connection = pymongo.Connection(connection_string, safe=True)
+                db = connection.trends
+                apts = db.apts
+                apts.insert(item) 
+
+                #write into files for hadoop use
+                #date_str = date.today().strftime("%m/%d/%y")
+                timestamp = int(time.time())*1000
+                f = open(data_directory + date.today().strftime("%m/%d/%y") + '', 'w')
+                #line =  timestamp + "|" + id + "|" + str(beds) + "|" + baths + "|" + lp + "|" + hp + "|" + ls + "|" + hs + "\n"
+                #f.write(line)
+                f.close()
+
+                #items.append(item)
