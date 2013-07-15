@@ -22,3 +22,4 @@ class TrendsItem(Item):
     ls = Field()
     hs = Field()
     deposit = Field()
+    timestamp = Field()

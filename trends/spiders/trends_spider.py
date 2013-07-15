@@ -107,6 +107,9 @@ class TrendsSpider(BaseSpider):
                 item['baths'] = baths
                 item['id'] = id
 
+                timestamp = int(time.time()*1000)
+                item['timestamp'] = timestamp
+
                 item = item.__dict__
 
                 #insert into mongodb
@@ -116,7 +119,6 @@ class TrendsSpider(BaseSpider):
                 apts.insert(item)
 
                 #write to files for hadoop use
-                timestamp = int(time.time()*1000)
                 f = open(data_directory + date.today().strftime("%m-%d-%y"), 'a')
                 line =  str(timestamp) + "|" + id + "|" + str(beds) + "|" + str(baths) + "|" + str(lp) + "|" + str(hp) + "|" + str(ls) + "|" + str(hs) + "\n"
                 f.write(line)
